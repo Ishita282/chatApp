@@ -1,6 +1,6 @@
 // client.js
 (() => {
-  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
+  const ws = new WebSocket("wss:https://chatapp-heui.onrender.com ");
 
   // DOM
   const roomListEl = document.getElementById("room-list");
