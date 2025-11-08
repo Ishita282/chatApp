@@ -10,8 +10,8 @@ const wss = new WebSocket.Server({ server });
 
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from public
-app.use(express.static(path.join(__dirname, "public")));
+// Serve static files from docs
+app.use(express.static(path.join(__dirname, "docs")));
 
 /*
  Data structures:
@@ -38,7 +38,7 @@ function broadcast(roomName, obj) {
   }
 }
 
-// get public room list
+// get docs room list
 function getRoomList() {
   const list = [];
   for (const [name, room] of rooms) {
