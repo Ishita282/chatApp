@@ -37,3 +37,7 @@ Hard
 ```bash
 npm install
 npm start
+
+
+🎮 **Live Demo:** [Click here](https://ishitasharma.github.io/web-games/)
+📂 **GitHub Repository:** [View code](https://github.com/ishitasharma/web-games)
