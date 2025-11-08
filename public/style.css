@@ -1,0 +1,41 @@
+/* styles.css - simple responsive layout */
+:root{
+  --bg:linear-gradient(135deg, #e655b3, #b257cc);
+  --card:#ffffff;
+  --accent:#ddc61a;
+  --muted:#0b097e;
+}
+*{box-sizing:border-box}
+html,body,#app{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:#885670}
+#app{display:flex;gap:16px;padding:16px}
+
+/* Sidebar */
+#sidebar{width:300px;background:var(--card);border-radius:12px;padding:12px;box-shadow:0 4px 18px rgba(176, 60, 187, 0.54);display:flex;flex-direction:column;gap:12px}
+.brand h1{margin:0;font-size:20px;color:var(--accent)}
+.panel{background:#f184cd;padding:10px;border-radius:8px}
+.panel h3{margin:0 0 8px 0;font-size:13px;color:var(--muted)}
+#room-list,#user-list{list-style:none;padding:0;margin:0;max-height:180px;overflow:auto}
+#room-list li,#user-list li{padding:8px;border-radius:6px;margin-bottom:6px;cursor:pointer}
+#room-list li:hover{background:#bc7fe9}
+#create-room-form{display:flex;gap:8px;margin-top:8px}
+#create-room-form input{flex:1;padding:8px;border-radius:6px;border:1px solid #b88ce0}
+#create-room-form button{padding:8px 10px;border-radius:6px;background:var(--accent);color:#b756af;border:none}
+
+/* Main */
+#main-area{flex:1;display:flex;flex-direction:column;height:calc(100vh - 32px)}
+#chat-header{background:var(--card);padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 12px rgba(15,23,42,0.04)}
+#messages{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.message{max-width:70%;padding:10px;border-radius:10px;background:#dc92f5;box-shadow:0 2px 8px rgba(13,18,31,0.03)}
+.message.me{margin-left:auto;background:#f07ae7}
+.message .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+#message-form{display:flex;gap:8px;padding:12px;background:var(--card);border-radius:12px}
+#message-form input{flex:1;padding:10px;border-radius:8px;border:1px solid #ed7add}
+#message-form button{padding:10px 12px;border-radius:8px;background:var(--accent);color:#8e4490;border:none}
+
+/* small screens */
+@media (max-width:900px){
+  #app{flex-direction:column;padding:8px}
+  #sidebar{width:100%;order:2}
+  #main-area{order:1;height:auto}
+}
+.hidden{display:none}

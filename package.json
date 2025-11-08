@@ -1,0 +1,15 @@
+{
+  "name": "chat-application",
+  "version": "1.0.0",
+  "description": "Real-time chat application using WebSockets (ws), HTML/CSS/JS frontend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Ishita",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.3"
+  }
+}

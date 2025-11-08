@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Chat Application</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="brand">
+        <h1>Chat Application</h1>
+      </div>
+
+      <section class="panel">
+        <h3>Rooms</h3>
+        <ul id="room-list" role="list"></ul>
+        <form id="create-room-form">
+          <input id="room-name" placeholder="New room name" />
+          <button type="submit">Create</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h3>Login</h3>
+        <input id="username-input" placeholder="Enter username" />
+        <select id="room-select"></select>
+        <button id="join-btn">Join</button>
+        <button id="leave-btn" class="hidden">Leave</button>
+      </section>
+
+      <section class="panel">
+        <h3>Users in room</h3>
+        <ul id="user-list"></ul>
+      </section>
+    </aside>
+
+    <main id="main-area">
+      <header id="chat-header">
+        <h2 id="current-room">Not in a room</h2>
+        <div id="notifications">No notifications</div>
+      </header>
+
+      <section id="messages" aria-live="polite"></section>
+
+      <form id="message-form" class="hidden">
+        <input id="message-input" placeholder="Type a message (supports **bold**, *italic*, links)" autocomplete="off"/>
+        <button type="submit">Send</button>
+      </form>
+    </main>
+  </div>
+
+  <script src="/client.js"></script>
+</body>
+</html>

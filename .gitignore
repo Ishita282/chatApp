@@ -1,0 +1,23 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Node.js dependencies (if you ever add npm)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build or cache folders
+dist/
+build/
+.cache/
+.tmp/
+
+# IDE or editor settings
+.vscode/
+.idea/
+*.swp
+
+# Environment or config files (if added later)
+.env
+*.env
