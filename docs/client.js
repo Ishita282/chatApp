@@ -1,6 +1,6 @@
 // client.js
 (() => {
-  const ws = new WebSocket("wss:https://chatapp-heui.onrender.com ");
+  const ws = new WebSocket("wss://chatapp-heui.onrender.com");
 
   // DOM
   const roomListEl = document.getElementById("room-list");
