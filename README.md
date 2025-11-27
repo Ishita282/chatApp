@@ -5,12 +5,8 @@ Chat Application
 
 ## Technologies
 - HTML, CSS, JavaScript (frontend)
-- Node.js + Express + ws (server / WebSocket)
+- Node.js + Express + ws (server / WebSocket) `https://chatapp-heui.onrender.com`
 
-## Difficulty
-Hard
-
----
 
 ## Features implemented (per assignment)
 - Intuitive responsive UI (rooms list, message area, message input)
@@ -19,7 +15,7 @@ Hard
 - Username selection before joining
 - Unique username enforcement per room (server-side)
 - Messages display sender + timestamp
-- Basic text formatting: **bold**, *italics*, links (auto anchor)
+- Basic text formatting: *bold*, *italics*, links (auto anchor)
 - Auto-scroll, notifications (title change when tab hidden)
 - Handles user join/leave and disconnects
 - Basic input validation and sanitization to prevent XSS
@@ -28,16 +24,11 @@ Hard
 
 ## Run locally
 
-1. Ensure you have Node.js (v14+) installed.
+1. In the root folder run:
 
-2. Extract project folder (if compressed).
-
-3. In the root folder run:
-
-```bash
-npm install
-npm start
+`npm install`
+`npm start`
 
 
-🎮 **Live Demo:** https://Ishita282.github.io/chatApp/
-📂 **GitHub Repository:** https://github.com/Ishita282/chatApp
+**Live Demo:** `https://Ishita282.github.io/chatApp/`
+**GitHub Repository:** `https://github.com/Ishita282/chatApp`

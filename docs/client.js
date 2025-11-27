@@ -1,8 +1,14 @@
-// client.js
 (() => {
-  const ws = new WebSocket("wss://chatapp-heui.onrender.com");
+  const PRIMARY_WS = "wss://chatapp-heui.onrender.com";
+  const FALLBACK_WS = "wss://ws.postman-echo.com/raw"; 
+  let wsUrl = PRIMARY_WS;
+  let ws; 
+  let reconnectAttempts = 0;
+  let reconnectTimer = null;
+  const MAX_RECONNECT_DELAY = 30_000; 
 
-  // DOM
+  const sendQueue = [];
+
   const roomListEl = document.getElementById("room-list");
   const roomSelectEl = document.getElementById("room-select");
   const createForm = document.getElementById("create-room-form");
@@ -19,22 +25,16 @@
 
   let state = { connected: false, username: null, room: null, rooms: [] };
 
-  // small utilities
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, function (m) {
       return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m];
     });
   }
 
-  // basic formatting: **bold**, *italic*, and links (http(s)://)
   function formatText(s) {
-    // escape first
     let t = escapeHtml(s);
-    // links
     t = t.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-    // bold **text**
     t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    // italic *text*
     t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
     return t;
   }
@@ -57,21 +57,28 @@
     msg.appendChild(meta);
     msg.appendChild(body);
     messagesEl.appendChild(msg);
-    // auto scroll
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function addSystem(text) {
+    const el = document.createElement("div");
+    el.className = "message";
+    el.style.background = "#f3f4f6";
+    el.style.textAlign = "center";
+    el.style.fontSize = "13px";
+    el.textContent = text;
+    messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
   function setRooms(rooms) {
     state.rooms = rooms;
-    // room list
     roomListEl.innerHTML = "";
     roomSelectEl.innerHTML = "";
     rooms.forEach(r => {
       const li = document.createElement("li");
       li.textContent = `${r.name} (${r.users})`;
-      li.onclick = () => {
-        roomSelectEl.value = r.name;
-      };
+      li.onclick = () => { roomSelectEl.value = r.name; };
       roomListEl.appendChild(li);
       const opt = document.createElement("option");
       opt.value = r.name;
@@ -90,32 +97,106 @@
   }
 
   function showNotification(msg) {
+    if (!notificationsEl) return;
     notificationsEl.textContent = msg;
     notificationsEl.style.opacity = "1";
     setTimeout(() => notificationsEl.style.opacity = "0.6", 3000);
-    // small title notification
     if (document.hidden) {
       document.title = "New message — " + (state.room || "");
       setTimeout(() => document.title = "Unified Chat", 2000);
     }
   }
 
-  // WebSocket events
-  ws.addEventListener("open", () => {
-    state.connected = true;
-    ws.send(JSON.stringify({ type: "list_rooms" }));
-  });
+  function safeSend(obj) {
+    const text = JSON.stringify(obj);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(text);
+      } catch (e) {
+        console.warn("Failed to send immediately, queuing:", e);
+        sendQueue.push(text);
+      }
+    } else {
+      sendQueue.push(text);
+    }
+  }
 
-  ws.addEventListener("message", (ev) => {
-    let data;
-    try { data = JSON.parse(ev.data); } catch (e) { return; }
+  function flushQueue() {
+    while (sendQueue.length > 0 && ws && ws.readyState === WebSocket.OPEN) {
+      const txt = sendQueue.shift();
+      try { ws.send(txt); } catch (e) { console.warn("flush send failed, requeue", e); sendQueue.unshift(txt); break; }
+    }
+  }
+
+  function scheduleReconnect() {
+    reconnectAttempts++;
+    const delay = Math.min(1000 * Math.pow(1.5, reconnectAttempts), MAX_RECONNECT_DELAY);
+    console.warn(`WebSocket disconnected. Reconnecting in ${Math.round(delay)}ms (attempt ${reconnectAttempts})`);
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => {
+      if (reconnectAttempts > 5 && wsUrl !== FALLBACK_WS) {
+        console.warn("Switching to fallback test WebSocket for local testing.");
+        wsUrl = FALLBACK_WS;
+      }
+      connect();
+    }, delay);
+  }
+
+  function resetReconnect() {
+    reconnectAttempts = 0;
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  }
+
+  function connect() {
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (e) {
+      console.error("WebSocket construction failed:", e);
+      scheduleReconnect();
+      return;
+    }
+
+    ws.addEventListener("open", () => {
+      console.info("WebSocket open:", wsUrl);
+      state.connected = true;
+      resetReconnect();
+      safeSend({ type: "list_rooms" });
+      flushQueue();
+    });
+
+    ws.addEventListener("message", (ev) => {
+      let data;
+      try {
+        data = JSON.parse(ev.data);
+      } catch (e) {
+        console.warn("Received non-JSON message (ignored):", ev.data);
+        return;
+      }
+      handleServerMessage(data);
+    });
+
+    ws.addEventListener("error", (err) => {
+      console.error("WebSocket error:", err);
+    });
+
+    ws.addEventListener("close", (ev) => {
+      console.warn("WebSocket closed:", ev.code, ev.reason);
+      state.connected = false;
+      addSystem("Disconnected from server.");
+      joinBtn.classList.remove("hidden");
+      leaveBtn.classList.add("hidden");
+      messageForm.classList.add("hidden");
+      scheduleReconnect();
+    });
+  }
+
+  function handleServerMessage(data) {
     switch (data.type) {
       case "rooms":
         setRooms(data.rooms || []);
         break;
       case "created_room":
-        // refresh
-        ws.send(JSON.stringify({ type: "list_rooms" }));
+        safeSend({ type: "list_rooms" });
         break;
       case "join_failed":
         alert(data.message || "Failed to join");
@@ -147,50 +228,31 @@
         console.warn("Error from server:", data.message);
         break;
       default:
-        // ignore
+        console.warn("Unknown message type:", data.type);
     }
-  });
-
-  ws.addEventListener("close", () => {
-    state.connected = false;
-    addSystem("Disconnected from server.");
-    joinBtn.classList.remove("hidden");
-    leaveBtn.classList.add("hidden");
-    messageForm.classList.add("hidden");
-  });
-
-  function addSystem(text) {
-    const el = document.createElement("div");
-    el.className = "message";
-    el.style.background = "#f3f4f6";
-    el.style.textAlign = "center";
-    el.style.fontSize = "13px";
-    el.textContent = text;
-    messagesEl.appendChild(el);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
-  // paging: create room
+  connect();
+
   createForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const name = roomNameInput.value.trim();
     if (!name) return;
-    ws.send(JSON.stringify({ type: "create_room", room: name }));
+    safeSend({ type: "create_room", room: name });
     roomNameInput.value = "";
   });
 
-  // join
   joinBtn.addEventListener("click", () => {
     const username = usernameInput.value.trim();
     const room = roomSelectEl.value;
     if (!username) { alert("Please enter a username."); return; }
     if (!room) { alert("Please select a room."); return; }
-    ws.send(JSON.stringify({ type: "join", room, username }));
+    safeSend({ type: "join", room, username });
   });
 
   leaveBtn.addEventListener("click", () => {
     if (!state.room || !state.username) return;
-    ws.send(JSON.stringify({ type: "leave", room: state.room, username: state.username }));
+    safeSend({ type: "leave", room: state.room, username: state.username });
     state.room = null;
     state.username = null;
     currentRoomEl.textContent = "Not in a room";
@@ -205,20 +267,25 @@
     e.preventDefault();
     const text = messageInput.value;
     if (!text || !text.trim()) return;
-    ws.send(JSON.stringify({ type: "message", text }));
+    safeSend({ type: "message", text });
     messageInput.value = "";
   });
 
-  // initial list fetch every 5s to keep in sync
   setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "list_rooms" }));
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      safeSend({ type: "list_rooms" });
+    }
   }, 5000);
 
-  // register visibility change to clear notifications
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       document.title = "Unified Chat";
     }
   });
+
+  window._chatDebug = {
+    getState: () => ({ wsUrl, readyState: ws ? ws.readyState : null, reconnectAttempts, queueLength: sendQueue.length }),
+    reconnectNow: () => { if (ws) ws.close(); else connect(); }
+  };
 
 })();
